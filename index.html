@@ -1,30 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>jvbp Payment</title>
+  <title>JVBP Document Viewer</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    .responsive-iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
-      width: 100vw;
-      height: 100vh;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    #loader {
+      margin-top: 50px;
+    }
+    #lookerContainer {
+      width: 100%;
+      height: 600px;
+      display: none;
+      margin-top: 20px;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
       border: none;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <div> 
-    <iframe id="myframe" class="responsive-iframe" src="" allowFullScreen></iframe>
+
+
+  <h2 id="loadingText">กำลังโหลดข้อมูลจาก LINE...</h2>
+  <div id="loader">🔄</div>
+
+
+  <div id="errorMessage" class="error" style="display: none;"></div>
+
+
+  <div id="lookerContainer">
+    <iframe id="lookerFrame"></iframe>
   </div>
-  <script>
-    const apps = new URL(window.location);
-    const formUrl = apps.searchParams.get('apps');
-    const url = decodeURIComponent(formUrl)
-          document.getElementById('myframe').src = url
-  </script>
+
+
+ <script>
+  const liffId = '2007032148-a1zrG2rP';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIM0GsAx61Tqfpq7kHMzCYOdC47KjIQVMQO_R9OMa2iHh96RCpAu_-HCPE3m8rxAzcJA/exec';
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const docType = new URLSearchParams(window.location.search).get('docType');
+
+
+    if (!docType || !['RFA', 'RFI', 'Letter_IN'].includes(docType)) {
+      showError('กรุณาระบุประเภทเอกสารให้ถูกต้อง เช่น ?docType=RFA');
+      return;
+    }
+
+
+    liff.init({ liffId })
+      .then(async () => {
+        if (!liff.isLoggedIn()) {
+          // 🔁 Redirect กลับมาหน้าเดิมหลัง login
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+        const displayName = profile.displayName;
+
+
+        document.getElementById('loadingText').innerText = `สวัสดีคุณ ${displayName} กำลังโหลดเอกสารประเภท ${docType}...`;
+
+
+        const url = `${SCRIPT_URL}?userId=${encodeURIComponent(userId)}&displayName=${encodeURIComponent(displayName)}&buttonClicked=${encodeURIComponent(docType)}&cache=${Date.now()}`;
+
+
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.lookerUrl) {
+              document.getElementById('loader').style.display = 'none';
+              document.getElementById('lookerFrame').src = data.lookerUrl;
+              document.getElementById('lookerContainer').style.display = 'block';
+            } else {
+              showError('ไม่พบ Looker URL สำหรับเอกสารนี้');
+            }
+          })
+          .catch(() => {
+            showError('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+          });
+      })
+      .catch((err) => {
+        showError('ไม่สามารถเชื่อมต่อกับ LIFF ได้: ' + err.message);
+      });
+  });
+
+
+  function showError(message) {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('loadingText').style.display = 'none';
+    const errorEl = document.getElementById('errorMessage');
+    errorEl.style.display = 'block';
+    errorEl.textContent = message;
+  }
+</script>
 </body>
 </html>
