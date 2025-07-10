@@ -1,5 +1,6 @@
 const liffId = '2007032148-mxreYwe5';//'2007032148-a1zrG2rP';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIM0GsAx61Tqfpq7kHMzCYOdC47KjIQVMQO_R9OMa2iHh96RCpAu_-HCPE3m8rxAzcJA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0J5rw9qE7HTMol0Q1eDaxKhNxzi_HHMt6d1kgVv6u6knmixpaVhHjrfQBK1LzcnyR2Q/exec';
+//'https://script.google.com/macros/s/AKfycbwIM0GsAx61Tqfpq7kHMzCYOdC47KjIQVMQO_R9OMa2iHh96RCpAu_-HCPE3m8rxAzcJA/exec';
 
 document.addEventListener('DOMContentLoaded', function () {
   const docType = new URLSearchParams(window.location.search).get('docType');
