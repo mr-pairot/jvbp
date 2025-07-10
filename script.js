@@ -1,4 +1,4 @@
-const liffId = '2007032148-a1zrG2rP';
+const liffId = '2007032148-mxreYwe5';//'2007032148-a1zrG2rP';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIM0GsAx61Tqfpq7kHMzCYOdC47KjIQVMQO_R9OMa2iHh96RCpAu_-HCPE3m8rxAzcJA/exec';
 
 document.addEventListener('DOMContentLoaded', function () {
