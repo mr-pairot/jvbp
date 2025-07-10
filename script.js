@@ -1,51 +1,54 @@
-// script.js
+const liffId = '2007032148-a1zrG2rP';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIM0GsAx61Tqfpq7kHMzCYOdC47KjIQVMQO_R9OMa2iHh96RCpAu_-HCPE3m8rxAzcJA/exec';
 
-async function getLookerUrl(buttonName) {
-  const response = await fetch(`https://script.google.com/macros/s/AKfycbyfGJwJ72tjZ450U6STHXiUVcijGPJ_YNaNIffQjgUMFNZQ47uBJ1DOwhP4zq60tAc4ww/exec?buttonName=${buttonName}`);
-  const data = await response.json();
-  console.log('Fetched data:', data);
-  return data.lookerUrl;
-}
+document.addEventListener('DOMContentLoaded', function () {
+  const docType = new URLSearchParams(window.location.search).get('docType');
 
-async function initLiff() {
-  document.getElementById('loader').style.display = 'block';
-  await liff.init({ liffId: window.liffId });
-  console.log('LIFF initialized');
-
-  if (!liff.isLoggedIn()) {
-    liff.login();
-  } else {
-    const lookerUrl = await getLookerUrl(window.buttonName);
-    loadLooker(lookerUrl);
-    sendDataToSheet(window.buttonName);
+  if (!docType || !['RFA', 'RFI', 'Letter_IN'].includes(docType)) {
+    showError('กรุณาระบุประเภทเอกสารให้ถูกต้อง เช่น ?docType=RFA');
+    return;
   }
-}
 
-function loadLooker(url) {
-  document.getElementById('iframe-container').innerHTML = `<iframe src="${url}" width="100%" height="600px" frameborder="0"></iframe>`;
-  document.getElementById('loader').style.display = 'none';
-}
+  liff.init({ liffId })
+    .then(async () => {
+      if (!liff.isLoggedIn()) {
+        // 🔁 Redirect กลับมาหน้าเดิมหลัง login
+        liff.login({ redirectUri: window.location.href });
+        return;
+      }
 
-async function sendDataToSheet(buttonName) {
-  if (liff.isLoggedIn()) {
-    const profile = await liff.getProfile();
-    const userId = profile.userId;
-    const displayName = profile.displayName;
+      const profile = await liff.getProfile();
+      const userId = profile.userId;
+      const displayName = profile.displayName;
 
-    const data = {
-      userId: userId,
-      displayName: displayName,
-      buttonClicked: buttonName
-    };
+      document.getElementById('loadingText').innerText = `สวัสดีคุณ ${displayName} กำลังโหลดเอกสารประเภท ${docType}...`;
 
-    console.log('Sending data:', data);
+      const url = `${SCRIPT_URL}?userId=${encodeURIComponent(userId)}&displayName=${encodeURIComponent(displayName)}&buttonClicked=${encodeURIComponent(docType)}&cache=${Date.now()}`;
 
-    await fetch('https://script.google.com/macros/s/AKfycbyfGJwJ72tjZ450U6STHXiUVcijGPJ_YNaNIffQjgUMFNZQ47uBJ1DOwhP4zq60tAc4ww/exec', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.lookerUrl) {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('lookerFrame').src = data.lookerUrl;
+            document.getElementById('lookerContainer').style.display = 'block';
+          } else {
+            showError('ไม่พบ Looker URL สำหรับเอกสารนี้');
+          }
+        })
+        .catch(() => {
+          showError('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+        });
+    })
+    .catch((err) => {
+      showError('ไม่สามารถเชื่อมต่อกับ LIFF ได้: ' + err.message);
     });
+});
 
-    console.log('Data sent to sheet');
-  }
+function showError(message) {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('loadingText').style.display = 'none';
+  const errorEl = document.getElementById('errorMessage');
+  errorEl.style.display = 'block';
+  errorEl.textContent = message;
 }
